@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KageLauncher — Minecraft Launcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --card: #1a1a24;
+    --card2: #20202c;
+    --border: rgba(120,100,255,0.15);
+    --border2: rgba(120,100,255,0.3);
+    --purple: #7c5cff;
+    --purple2: #9b80ff;
+    --purple3: #5a3fcc;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a72;
+    --glow: 0 0 40px rgba(124,92,255,0.25);
+    --glow2: 0 0 80px rgba(124,92,255,0.15);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* PARTICLES */
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--purple);
+    opacity: 0;
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.2; }
+    100% { transform: translateY(-20px) scale(1); opacity: 0; }
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,92,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    height: 64px;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 18px; letter-spacing: -0.5px;
+    text-decoration: none; color: var(--text);
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--purple), var(--purple2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 20px rgba(124,92,255,0.4);
+  }
+  .logo-k { color: white; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: none; border: none;
+  }
+  .nav-link:hover { color: var(--text); background: var(--bg3); }
+  .nav-link.active { color: var(--purple2); }
+  .nav-actions { display: flex; gap: 8px; }
+  .btn-ghost {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn-ghost:hover { background: var(--bg3); border-color: var(--purple); }
+  .btn-primary {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, var(--purple), var(--purple3));
+    color: white;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    box-shadow: 0 0 20px rgba(124,92,255,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(124,92,255,0.5); }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* USER BADGE */
+  .user-badge {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .user-badge.visible { display: flex; }
+  .user-avatar-small {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--purple), var(--purple2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    overflow: hidden;
+  }
+  .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* PAGES */
+  .page { display: none; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* HERO */
+  #page-home {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 80px 40px 60px;
+    position: relative;
+  }
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .orb1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(124,92,255,0.2) 0%, transparent 70%); top: 10%; left: 50%; transform: translateX(-50%); }
+  .orb2 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(74,222,128,0.1) 0%, transparent 70%); bottom: 20%; right: 10%; }
+  .orb3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%); top: 30%; left: 5%; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    border: 1px solid var(--border2);
+    background: rgba(124,92,255,0.1);
+    font-size: 13px; font-weight: 500; color: var(--purple2);
+    margin-bottom: 28px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
+
+  .hero-title {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -3px;
+    margin-bottom: 12px;
+  }
+  .hero-title span { color: var(--purple2); text-shadow: 0 0 60px rgba(124,92,255,0.5); }
+  .hero-sub {
+    font-size: 20px; color: var(--text2); font-weight: 400;
+    max-width: 520px; line-height: 1.6;
+    margin-bottom: 44px;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 80px; }
+  .btn-xl {
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-xl-primary {
+    background: linear-gradient(135deg, var(--purple), var(--purple3));
+    color: white; border: none;
+    box-shadow: 0 0 40px rgba(124,92,255,0.4), 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .btn-xl-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,92,255,0.6), 0 12px 40px rgba(0,0,0,0.5); }
+  .btn-xl-ghost {
+    background: transparent;
+    color: var(--text); border: 1px solid var(--border2);
+  }
+  .btn-xl-ghost:hover { background: var(--bg3); border-color: var(--purple); }
+
+  /* STATS */
+  .hero-stats {
+    display: flex; gap: 48px; justify-content: center; flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 32px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
+  .stat-num span { color: var(--purple2); }
+  .stat-label { font-size: 13px; color: var(--text3); margin-top: 4px; }
+
+  /* FEATURES */
+  .section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
+  .section-label { font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--purple2); margin-bottom: 16px; }
+  .section-title { font-size: clamp(32px, 5vw, 52px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px; }
+  .section-sub { font-size: 17px; color: var(--text2); max-width: 500px; line-height: 1.6; margin-bottom: 60px; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(124,92,255,0.05) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feature-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: var(--glow); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(124,92,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(124,92,255,0.2);
+  }
+  .feature-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .feature-desc { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  /* DOWNLOAD SECTION */
+  .download-section {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 80px 40px;
+  }
+  .download-inner { max-width: 1200px; margin: 0 auto; }
+  .download-card {
+    background: linear-gradient(135deg, var(--card) 0%, var(--card2) 100%);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    padding: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 40px;
+    position: relative; overflow: hidden;
+    box-shadow: var(--glow2);
+  }
+  .download-card::after {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(124,92,255,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .download-left { flex: 1; min-width: 280px; }
+  .download-version {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: var(--green);
+    font-size: 12px; font-weight: 600; letter-spacing: 1px;
+    padding: 4px 12px; border-radius: 100px;
+    margin-bottom: 16px;
+  }
+  .download-title { font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+  .download-desc { color: var(--text2); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+  .download-specs {
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .spec { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+  .spec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple2); }
+  .download-right { display: flex; flex-direction: column; gap: 12px; }
+  .btn-download {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    font-family: inherit; text-decoration: none;
+    border: none;
+  }
+  .btn-download-win {
+    background: linear-gradient(135deg, var(--purple), var(--purple3));
+    color: white;
+    box-shadow: 0 0 30px rgba(124,92,255,0.4);
+  }
+  .btn-download-win:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(124,92,255,0.6); }
+  .btn-download-other {
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-download-other:hover { color: var(--text); border-color: var(--border2); }
+  .dl-icon { font-size: 20px; }
+
+  /* AUTH MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 0;
+    width: 100%; max-width: 420px;
+    box-shadow: var(--glow), 0 40px 80px rgba(0,0,0,0.6);
+    animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.9) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+  .modal-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2); font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--bg3); color: var(--text); }
+  .modal-body { padding: 28px; }
+  .modal-tabs { display: flex; gap: 4px; margin-bottom: 28px; background: var(--bg3); border-radius: 10px; padding: 4px; }
+  .modal-tab {
+    flex: 1; padding: 8px;
+    border-radius: 8px;
+    border: none; background: transparent;
+    color: var(--text2); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .modal-tab.active { background: var(--card2); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+  .form-input {
+    width: 100%; padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text); font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,92,255,0.15); }
+  .form-input::placeholder { color: var(--text3); }
+  .form-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
+  .form-error.show { display: block; }
+  .form-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+  /* DASHBOARD */
+  #page-dashboard { min-height: 100vh; padding-top: 80px; }
+  .dashboard-wrap { max-width: 1100px; margin: 0 auto; padding: 40px; }
+  .dash-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px; margin-bottom: 40px;
+  }
+  .dash-welcome { font-size: 13px; color: var(--text3); margin-bottom: 8px; letter-spacing: 0.5px; }
+  .dash-title { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+  .dash-title span { color: var(--purple2); }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 800px) { .dash-grid { grid-template-columns: 1fr; } }
+
+  /* PROFILE CARD */
+  .profile-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .profile-banner {
+    height: 80px;
+    background: linear-gradient(135deg, var(--purple3), var(--purple));
+    position: relative;
+  }
+  .profile-avatar-wrap {
+    position: absolute; bottom: -32px; left: 20px;
+  }
+  .profile-avatar {
+    width: 64px; height: 64px;
+    border-radius: 14px;
+    border: 3px solid var(--card);
+    background: var(--card2);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: var(--purple2);
+  }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-info { padding: 44px 20px 20px; }
+  .profile-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .profile-role {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--purple2);
+    background: rgba(124,92,255,0.1);
+    border: 1px solid rgba(124,92,255,0.2);
+    padding: 3px 10px; border-radius: 100px;
+    margin-bottom: 20px;
+  }
+  .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .pstat {
+    background: var(--bg3);
+    border-radius: 12px; padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .pstat-num { font-size: 20px; font-weight: 700; color: var(--text); }
+  .pstat-label { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .profile-btn {
+    width: 100%; padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(124,92,255,0.1);
+    color: var(--purple2); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .profile-btn:hover { background: rgba(124,92,255,0.2); }
+
+  /* TABS */
+  .dash-main {}
+  .tab-nav {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 6px;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 16px;
+    border-radius: 8px;
+    border: none; background: transparent;
+    color: var(--text2); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tab-btn.active { background: var(--purple); color: white; box-shadow: 0 0 20px rgba(124,92,255,0.3); }
+  .tab-btn .tab-icon { font-size: 16px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* SETTINGS CARD */
+  .settings-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .settings-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px; color: var(--text2);
+  }
+  .settings-card-body { padding: 20px; }
+
+  /* SKIN PANEL */
+  .skin-grid { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: start; }
+  .skin-preview {
+    width: 120px; height: 200px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .skin-model { font-size: 64px; filter: grayscale(0.3); }
+  .skin-preview-label {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--text3);
+    background: var(--bg2); padding: 2px 8px; border-radius: 100px;
+    white-space: nowrap;
+  }
+  .skin-info { flex: 1; }
+  .skin-upload {
+    width: 100%; padding: 40px 20px;
+    border: 2px dashed var(--border2);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer; transition: all 0.2s;
+    background: transparent; color: var(--text2);
+    font-size: 14px; font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .skin-upload:hover { border-color: var(--purple); background: rgba(124,92,255,0.05); }
+  .skin-upload-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+  .skin-name-display {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 8px; font-size: 13px;
+    color: var(--text2);
+  }
+  .skin-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+  /* CAPE */
+  .cape-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; }
+  .cape-option {
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer; transition: all 0.2s;
+    border: 2px solid var(--border);
+    background: var(--bg3);
+  }
+  .cape-option:hover { border-color: var(--purple2); }
+  .cape-option.selected { border-color: var(--purple); background: rgba(124,92,255,0.1); }
+  .cape-emoji { font-size: 28px; margin-bottom: 6px; }
+  .cape-label { font-size: 11px; color: var(--text2); }
+  .cape-option.selected .cape-label { color: var(--purple2); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 32px; right: 32px;
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: var(--glow), 0 20px 40px rgba(0,0,0,0.4);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 18px; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 60px 0; }
+
+  /* PASSWORD STRENGTH */
+  .pw-strength { display: flex; gap: 4px; margin-top: 8px; }
+  .pw-bar { flex: 1; height: 3px; border-radius: 100px; background: var(--bg3); transition: background 0.3s; }
+  .pw-bar.weak { background: var(--red); }
+  .pw-bar.medium { background: var(--yellow); }
+  .pw-bar.strong { background: var(--green); }
+
+  /* LOGOUT */
+  .btn-danger {
+    padding: 10px 20px; border-radius: 8px;
+    border: 1px solid rgba(248,113,113,0.3);
+    background: rgba(248,113,113,0.1);
+    color: var(--red); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.2); border-color: var(--red); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    text-align: center;
+    color: var(--text3); font-size: 13px;
+    position: relative; z-index: 1;
+  }
+  footer a { color: var(--purple2); text-decoration: none; }
+
+  .separator { width: 100%; height: 1px; background: var(--border); }
+  .loading-bar { height: 3px; background: linear-gradient(90deg, var(--purple), var(--purple2)); width: 0; transition: width 0.4s; border-radius: 100px; }
+
+  /* ACCOUNT INFO SECTION */
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { font-size: 13px; color: var(--text2); }
+  .info-value { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .badge-active {
+    font-size: 11px; padding: 2px 8px; border-radius: 100px;
+    background: rgba(74,222,128,0.1); color: var(--green);
+    border: 1px solid rgba(74,222,128,0.2);
+  }
+
+  .mc-version-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 8px;
+  }
+  .mc-ver {
+    padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    color: var(--text2); text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .mc-ver:hover, .mc-ver.sel { border-color: var(--purple2); color: var(--purple2); background: rgba(124,92,255,0.08); }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#" onclick="showPage('home')">
+    <div class="logo-icon"><span class="logo-k">K</span></div>
+    KageLauncher
+  </a>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home')">Ana Sayfa</button>
+    <button class="nav-link" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Özellikler</button>
+    <button class="nav-link" onclick="document.getElementById('download').scrollIntoView({behavior:'smooth'})">İndir</button>
+  </div>
+  <div class="nav-actions">
+    <div class="user-badge" id="userBadge" onclick="showPage('dashboard')">
+      <div class="user-avatar-small" id="navAvatar"></div>
+      <span id="navUsername" style="font-size:14px;font-weight:500"></span>
+    </div>
+    <button class="btn-ghost" id="navLogin" onclick="openModal('login')">Giriş Yap</button>
+    <button class="btn-primary" id="navRegister" onclick="openModal('register')">Kayıt Ol</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-orb orb1"></div>
+    <div class="hero-orb orb2"></div>
+    <div class="hero-orb orb3"></div>
+
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      v2.5.0 — Şimdi Yayında
+    </div>
+
+    <h1 class="hero-title">Kage<span>Launcher</span></h1>
+    <p class="hero-sub">Minecraft'ı bir üst seviyeye taşı. Hızlı, güvenli ve özelleştirilebilir oyun deneyimi.</p>
+
+    <div class="hero-actions">
+      <button class="btn-xl btn-xl-primary" onclick="document.getElementById('download').scrollIntoView({behavior:'smooth'})">
+        ⬇️ Ücretsiz İndir
+      </button>
+      <button class="btn-xl btn-xl-ghost" onclick="openModal('register')">
+        🎮 Hesap Oluştur
+      </button>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">12<span>K+</span></div>
+        <div class="stat-label">Aktif Oyuncu</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">99<span>%</span></div>
+        <div class="stat-label">Uptime</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">4<span>ms</span></div>
+        <div class="stat-label">Ortalama Gecikme</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">200<span>+</span></div>
+        <div class="stat-label">Desteklenen Versiyon</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-label">Neden KageLauncher?</div>
+    <h2 class="section-title">Her şey bir arada.</h2>
+    <p class="section-sub">Oyun deneyimini kişiselleştir, hesabını yönet, modlarını ekle.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">Güvenli Hesap Sistemi</div>
+        <div class="feature-desc">Şifreli kayıt & giriş sistemi. Tüm veriler yerel olarak şifreli saklanır.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Skin & Cape Yönetimi</div>
+        <div class="feature-desc">Kendi skin'ini yükle, cape seç. Karakter görünümünü tamamen özelleştir.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Hızlı Başlatma</div>
+        <div class="feature-desc">Optimize edilmiş Java ayarları ile oyunu saniyeler içinde başlat.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <div class="feature-title">Mod Desteği</div>
+        <div class="feature-desc">Fabric, Forge, Optifine dahil tüm mod yükleyicileri desteklenir.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">Çoklu Versiyon</div>
+        <div class="feature-desc">1.8'den 1.21'e kadar tüm Minecraft versiyonlarını aynı anda yönet.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💾</div>
+        <div class="feature-title">Profil Yedekleme</div>
+        <div class="feature-desc">Hesap bilgilerin ve ayarların her oturumda korunur. Kaybetme korkusu yok.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <div class="download-section" id="download">
+    <div class="download-inner">
+      <div class="download-card">
+        <div class="download-left">
+          <div class="download-version">✅ v2.5.0 — Kararlı Sürüm</div>
+          <div class="download-title">KageLauncher İndir</div>
+          <div class="download-desc">Windows, macOS ve Linux için ücretsiz. Kurulum sadece 2 dakika.</div>
+          <div class="download-specs">
+            <div class="spec"><div class="spec-dot"></div>Java 8+ gerekli</div>
+            <div class="spec"><div class="spec-dot"></div>Min. 2GB RAM</div>
+            <div class="spec"><div class="spec-dot"></div>~45MB kurulum</div>
+          </div>
+        </div>
+        <div class="download-right">
+          <button class="btn-download btn-download-win" onclick="handleDownload('windows')">
+            <span class="dl-icon">🪟</span>
+            <div>
+              <div style="font-size:11px;opacity:0.8;font-weight:400">Windows için</div>
+              KageLauncher.exe
+            </div>
+          </button>
+          <button class="btn-download btn-download-other" onclick="handleDownload('mac')">
+            <span class="dl-icon">🍎</span>
+            <div>
+              <div style="font-size:11px;font-weight:400">macOS için</div>
+              KageLauncher.dmg
+            </div>
+          </button>
+          <button class="btn-download btn-download-other" onclick="handleDownload('linux')">
+            <span class="dl-icon">🐧</span>
+            <div>
+              <div style="font-size:11px;font-weight:400">Linux için</div>
+              KageLauncher.jar
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2025 KageLauncher — Tüm hakları saklıdır.</p>
+    <p style="margin-top:8px">Minecraft, Mojang AB'nin tescilli markasıdır. KageLauncher, Mojang ile bağlantılı değildir.</p>
+  </footer>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div id="page-dashboard" class="page">
+  <div class="dashboard-wrap">
+    <div class="dash-header">
+      <div>
+        <div class="dash-welcome">HOŞ GELDİN</div>
+        <div class="dash-title">Merhaba, <span id="dashName">Oyuncu</span> 👾</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost" onclick="showPage('home')">← Ana Sayfa</button>
+        <button class="btn-danger" onclick="logout()">Çıkış Yap</button>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <!-- LEFT: Profile Card -->
+      <div>
+        <div class="profile-card">
+          <div class="profile-banner"></div>
+          <div class="profile-info">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar" id="profileAvatar"></div>
+            </div>
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role">🎮 KageLauncher Üyesi</div>
+            <div class="profile-stats">
+              <div class="pstat">
+                <div class="pstat-num" id="statSessions">0</div>
+                <div class="pstat-label">Oturum</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-num" id="statDays">0</div>
+                <div class="pstat-label">Gün</div>
+              </div>
+            </div>
+            <button class="profile-btn" onclick="switchTab('ayarlar')">⚙️ Ayarları Düzenle</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Tabs -->
+      <div class="dash-main">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab('profil')">
+            <span class="tab-icon">👤</span> Profil
+          </button>
+          <button class="tab-btn" onclick="switchTab('skin')">
+            <span class="tab-icon">🎨</span> Skin
+          </button>
+          <button class="tab-btn" onclick="switchTab('cape')">
+            <span class="tab-icon">🏳️</span> Cape
+          </button>
+          <button class="tab-btn" onclick="switchTab('ayarlar')">
+            <span class="tab-icon">⚙️</span> Ayarlar
+          </button>
+        </div>
+
+        <!-- PROFIL TAB -->
+        <div class="tab-panel active" id="tab-profil">
+          <div class="settings-card">
+            <div class="settings-card-header">📋 Hesap Bilgileri</div>
+            <div class="settings-card-body">
+              <div class="info-row">
+                <span class="info-label">Kullanıcı Adı</span>
+                <span class="info-value" id="infoUsername">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Durum</span>
+                <span class="info-value"><span class="badge-active">✓ Aktif</span></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Kayıt Tarihi</span>
+                <span class="info-value" id="infoDate">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Launcher API Token</span>
+                <span class="info-value" id="infoToken" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple2)">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-header">🎮 Desteklenen MC Versiyonları</div>
+            <div class="settings-card-body">
+              <div class="mc-version-grid" id="mcVersions"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SKIN TAB -->
+        <div class="tab-panel" id="tab-skin">
+          <div class="settings-card">
+            <div class="settings-card-header">🎨 Skin Ayarları</div>
+            <div class="settings-card-body">
+              <div class="skin-grid">
+                <div class="skin-preview">
+                  <span id="skinPreviewEmoji" class="skin-model">🧑</span>
+                  <div class="skin-preview-label" id="skinPreviewLabel">Varsayılan</div>
+                </div>
+                <div class="skin-info">
+                  <div style="margin-bottom:12px">
+                    <div class="skin-name-display">
+                      <div class="skin-dot"></div>
+                      <span id="currentSkinName">Varsayılan skin aktif</span>
+                    </div>
+                  </div>
+                  <button class="skin-upload" onclick="document.getElementById('skinFileInput').click()">
+                    <span class="skin-upload-icon">📁</span>
+                    <strong>Skin dosyası seç</strong><br>
+                    <span style="font-size:12px">PNG formatı, 64x64 veya 128x128</span>
+                  </button>
+                  <input type="file" id="skinFileInput" accept=".png" style="display:none" onchange="uploadSkin(this)">
+                  <div class="form-group">
+                    <div class="form-label">Skin Model</div>
+                    <select class="form-input" id="skinModel" onchange="saveSkinModel()">
+                      <option value="steve">Steve (Klasik)</option>
+                      <option value="alex">Alex (İnce)</option>
+                    </select>
+                  </div>
+                  <button class="btn-primary" style="width:100%;padding:12px;font-size:14px;border-radius:10px" onclick="saveSkinSettings()">💾 Skin'i Kaydet</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAPE TAB -->
+        <div class="tab-panel" id="tab-cape">
+          <div class="settings-card">
+            <div class="settings-card-header">🏳️ Cape Seçimi</div>
+            <div class="settings-card-body">
+              <p style="font-size:13px;color:var(--text2);margin-bottom:20px">Karakterine takılacak cape'i seç. Launcher'da aktif olacak.</p>
+              <div class="cape-options" id="capeOptions"></div>
+              <div style="margin-top:20px">
+                <button class="btn-primary" style="padding:12px 28px;border-radius:10px;font-size:14px" onclick="saveCape()">💾 Cape'i Kaydet</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AYARLAR TAB -->
+        <div class="tab-panel" id="tab-ayarlar">
+          <div class="settings-card">
+            <div class="settings-card-header">🔑 Şifre Değiştir</div>
+            <div class="settings-card-body">
+              <div class="form-group">
+                <div class="form-label">Mevcut Şifre</div>
+                <input type="password" class="form-input" id="currentPw" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Yeni Şifre</div>
+                <input type="password" class="form-input" id="newPw" placeholder="••••••••" oninput="checkPwStrength(this.value)">
+                <div class="pw-strength">
+                  <div class="pw-bar" id="pw1"></div>
+                  <div class="pw-bar" id="pw2"></div>
+                  <div class="pw-bar" id="pw3"></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="form-label">Yeni Şifre Tekrar</div>
+                <input type="password" class="form-input" id="confirmPw" placeholder="••••••••">
+              </div>
+              <button class="btn-primary" style="padding:12px 28px;border-radius:10px;font-size:14px" onclick="changePassword()">🔑 Şifreyi Güncelle</button>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-header">🔗 Launcher API</div>
+            <div class="settings-card-body">
+              <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Bu token'ı launcher'ına ekleyerek hesabını bağla. Bu token'ı kimseyle paylaşma!</p>
+              <div style="display:flex;gap:8px">
+                <div class="form-input" id="apiTokenDisplay" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple2);flex:1;display:flex;align-items:center"></div>
+                <button class="btn-ghost" onclick="copyToken()" style="white-space:nowrap">📋 Kopyala</button>
+              </div>
+              <div style="margin-top:12px">
+                <button class="btn-ghost" onclick="regenerateToken()" style="font-size:13px">🔄 Token Yenile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Giriş Yap</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">Giriş Yap</button>
+        <button class="modal-tab" id="tabRegister" onclick="switchAuthTab('register')">Kayıt Ol</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="formLogin">
+        <div class="form-group">
+          <label class="form-label">Kullanıcı Adı</label>
+          <input type="text" class="form-input" id="loginUser" placeholder="kullaniciadiniz" autocomplete="username">
+          <div class="form-error" id="loginError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Şifre</label>
+          <input type="password" class="form-input" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeypress="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn-primary" style="width:100%;padding:13px;border-radius:10px;font-size:15px;margin-top:8px" onclick="doLogin()">🎮 Giriş Yap</button>
+        <p style="text-align:center;font-size:13px;color:var(--text3);margin-top:16px">Hesabın yok mu? <a href="#" style="color:var(--purple2);text-decoration:none" onclick="switchAuthTab('register')">Kayıt ol</a></p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="formRegister" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Kullanıcı Adı</label>
+          <input type="text" class="form-input" id="regUser" placeholder="kullaniciadiniz" maxlength="16" oninput="validateUsername(this)">
+          <div class="form-hint">3-16 karakter, sadece harf ve rakam</div>
+          <div class="form-error" id="regUserError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Şifre</label>
+          <input type="password" class="form-input" id="regPass" placeholder="••••••••" oninput="checkPwStrength(this.value,'reg')">
+          <div class="pw-strength">
+            <div class="pw-bar" id="rpw1"></div>
+            <div class="pw-bar" id="rpw2"></div>
+            <div class="pw-bar" id="rpw3"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Şifre Tekrar</label>
+          <input type="password" class="form-input" id="regPass2" placeholder="••••••••">
+          <div class="form-error" id="regPassError"></div>
+        </div>
+        <button class="btn-primary" style="width:100%;padding:13px;border-radius:10px;font-size:15px;margin-top:8px" onclick="doRegister()">✨ Hesap Oluştur</button>
+        <p style="text-align:center;font-size:13px;color:var(--text3);margin-top:16px">Hesabın var mı? <a href="#" style="color:var(--purple2);text-decoration:none" onclick="switchAuthTab('login')">Giriş yap</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span id="toastMsg">İşlem başarılı</span>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────
+const DB_KEY = 'kagelauncher_users';
+const SESSION_KEY = 'kagelauncher_session';
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveUsers(u) { localStorage.setItem(DB_KEY, JSON.stringify(u)); }
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+  catch { return null; }
+}
+function saveSession(s) { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+function generateToken(username) {
+  return 'kage_' + username + '_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+}
+
+// ── PAGES ────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── AUTH MODAL ───────────────────────────────────────────
+function openModal(tab) {
+  document.getElementById('authModal').classList.add('open');
+  switchAuthTab(tab || 'login');
+}
+function closeModal() { document.getElementById('authModal').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target.id==='authModal') closeModal(); }
+
+function switchAuthTab(tab) {
+  document.getElementById('formLogin').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('formRegister').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('modalTitle').textContent = tab==='login' ? 'Giriş Yap' : 'Kayıt Ol';
+  clearErrors();
+}
+
+function clearErrors() {
+  document.querySelectorAll('.form-error').forEach(e => { e.classList.remove('show'); e.textContent=''; });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── REGISTER ─────────────────────────────────────────────
+function validateUsername(input) {
+  const val = input.value;
+  const ok = /^[a-zA-Z0-9_]{3,16}$/.test(val);
+  if(!ok && val.length > 0) showError('regUserError','3-16 karakter, sadece harf/rakam/alt çizgi');
+  else { const e = document.getElementById('regUserError'); e.classList.remove('show'); }
+}
+
+function doRegister() {
+  clearErrors();
+  const user = document.getElementById('regUser').value.trim();
+  const pass = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+
+  if(!user || !/^[a-zA-Z0-9_]{3,16}$/.test(user)) { showError('regUserError','Geçerli bir kullanıcı adı gir (3-16 karakter)'); return; }
+  if(pass.length < 6) { showError('regPassError','Şifre en az 6 karakter olmalı'); return; }
+  if(pass !== pass2) { showError('regPassError','Şifreler eşleşmiyor!'); return; }
+
+  const users = getUsers();
+  if(users[user.toLowerCase()]) { showError('regUserError','Bu kullanıcı adı zaten alınmış!'); return; }
+
+  const token = generateToken(user);
+  users[user.toLowerCase()] = {
+    username: user,
+    password: btoa(pass),
+    token,
+    createdAt: new Date().toLocaleDateString('tr-TR'),
+    sessions: 1,
+    skin: { name: 'Varsayılan', model: 'steve' },
+    cape: 'none',
+    joinDays: 1
+  };
+  saveUsers(users);
+  saveSession({ username: user });
+  closeModal();
+  loadDashboard(user);
+  showToast('✅', 'Hoş geldin ' + user + '! Hesabın oluşturuldu.');
+}
+
+// ── LOGIN ────────────────────────────────────────────────
+function doLogin() {
+  clearErrors();
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const users = getUsers();
+  const data = users[user.toLowerCase()];
+  if(!data || data.password !== btoa(pass)) {
+    showError('loginError','Kullanıcı adı veya şifre hatalı!');
+    return;
+  }
+  data.sessions = (data.sessions || 0) + 1;
+  saveUsers(users);
+  saveSession({ username: data.username });
+  closeModal();
+  loadDashboard(data.username);
+  showToast('🎮', 'Tekrar hoş geldin, ' + data.username + '!');
+}
+
+// ── LOGOUT ───────────────────────────────────────────────
+function logout() {
+  clearSession();
+  updateNavState(null);
+  showPage('home');
+  showToast('👋', 'Güvenli çıkış yapıldı.');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+function loadDashboard(username) {
+  const users = getUsers();
+  const data = users[username.toLowerCase()];
+  if(!data) return;
+
+  document.getElementById('dashName').textContent = data.username;
+  document.getElementById('profileName').textContent = data.username;
+  document.getElementById('infoUsername').textContent = data.username;
+  document.getElementById('infoDate').textContent = data.createdAt;
+  document.getElementById('infoToken').textContent = data.token;
+  document.getElementById('apiTokenDisplay').textContent = data.token;
+  document.getElementById('statSessions').textContent = data.sessions || 1;
+  document.getElementById('statDays').textContent = data.joinDays || 1;
+  document.getElementById('currentSkinName').textContent = (data.skin && data.skin.name !== 'Varsayılan') ? data.skin.name : 'Varsayılan skin aktif';
+  document.getElementById('skinPreviewLabel').textContent = data.skin ? data.skin.name : 'Varsayılan';
+  if(data.skin) document.getElementById('skinModel').value = data.skin.model || 'steve';
+
+  // Avatar initials
+  const initials = data.username.slice(0,2).toUpperCase();
+  document.getElementById('profileAvatar').textContent = initials;
+  updateNavState(data.username);
+
+  // Cape
+  renderCapeOptions(data.cape);
+
+  // MC Versions
+  const versions = ['1.21.4','1.21','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1','1.16.5','1.12.2','1.8.9','1.7.10'];
+  const vGrid = document.getElementById('mcVersions');
+  vGrid.innerHTML = versions.map(v => `<div class="mc-ver">${v}</div>`).join('');
+
+  switchTab('profil');
+  showPage('dashboard');
+}
+
+// ── NAV STATE ────────────────────────────────────────────
+function updateNavState(username) {
+  const badge = document.getElementById('userBadge');
+  const loginBtn = document.getElementById('navLogin');
+  const registerBtn = document.getElementById('navRegister');
+  if(username) {
+    badge.classList.add('visible');
+    document.getElementById('navUsername').textContent = username;
+    document.getElementById('navAvatar').textContent = username.slice(0,2).toUpperCase();
+    loginBtn.style.display = 'none';
+    registerBtn.style.display = 'none';
+  } else {
+    badge.classList.remove('visible');
+    loginBtn.style.display = '';
+    registerBtn.style.display = '';
+  }
+}
+
+// ── TABS ────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const names = ['profil','skin','cape','ayarlar'];
+  btns[names.indexOf(name)].classList.add('active');
+}
+
+// ── SKIN ────────────────────────────────────────────────
+function uploadSkin(input) {
+  const file = input.files[0]; if(!file) return;
+  const session = getSession(); if(!session) return;
+  const users = getUsers();
+  const data = users[session.username.toLowerCase()];
+  data.skin = data.skin || {};
+  data.skin.name = file.name.replace('.png','');
+  const reader = new FileReader();
+  reader.onload = e => {
+    data.skin.dataUrl = e.target.result;
+    saveUsers(users);
+    document.getElementById('currentSkinName').textContent = data.skin.name;
+    document.getElementById('skinPreviewLabel').textContent = data.skin.name;
+    document.getElementById('skinPreviewEmoji').textContent = '🧑';
+    showToast('🎨','Skin yüklendi: '+data.skin.name);
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveSkinModel() {
+  const session = getSession(); if(!session) return;
+  const users = getUsers();
+  const data = users[session.username.toLowerCase()];
+  data.skin = data.skin || {};
+  data.skin.model = document.getElementById('skinModel').value;
+  saveUsers(users);
+}
+
+function saveSkinSettings() {
+  const session = getSession(); if(!session) return;
+  saveSkinModel();
+  showToast('💾','Skin ayarları kaydedildi!');
+}
+
+// ── CAPE ────────────────────────────────────────────────
+const CAPES = [
+  {id:'none', emoji:'❌', label:'Yok'},
+  {id:'red', emoji:'🟥', label:'Kırmızı'},
+  {id:'blue', emoji:'🟦', label:'Mavi'},
+  {id:'green', emoji:'🟩', label:'Yeşil'},
+  {id:'purple', emoji:'🟪', label:'Mor'},
+  {id:'gold', emoji:'🟨', label:'Altın'},
+  {id:'black', emoji:'⬛', label:'Siyah'},
+  {id:'white', emoji:'⬜', label:'Beyaz'},
+  {id:'kage', emoji:'👾', label:'Kage'},
+];
+
+let selectedCape = 'none';
+
+function renderCapeOptions(current) {
+  selectedCape = current || 'none';
+  const wrap = document.getElementById('capeOptions');
+  wrap.innerHTML = CAPES.map(c => `
+    <div class="cape-option ${selectedCape===c.id?'selected':''}" onclick="selectCape('${c.id}')">
+      <div class="cape-emoji">${c.emoji}</div>
+      <div class="cape-label">${c.label}</div>
+    </div>`).join('');
+}
+
+function selectCape(id) {
+  selectedCape = id;
+  document.querySelectorAll('.cape-option').forEach((el,i) => {
+    el.classList.toggle('selected', CAPES[i].id === id);
+  });
+}
+
+function saveCape() {
+  const session = getSession(); if(!session) return;
+  const users = getUsers();
+  users[session.username.toLowerCase()].cape = selectedCape;
+  saveUsers(users);
+  showToast('🏳️','Cape kaydedildi: '+CAPES.find(c=>c.id===selectedCape).label);
+}
+
+// ── PASSWORD ─────────────────────────────────────────────
+function checkPwStrength(val, prefix='') {
+  const p = prefix ? 'r' : '';
+  const bars = [document.getElementById(p+'pw1'), document.getElementById(p+'pw2'), document.getElementById(p+'pw3')];
+  bars.forEach(b => { b.className='pw-bar'; });
+  if(val.length === 0) return;
+  if(val.length < 6) { bars[0].classList.add('weak'); return; }
+  if(val.length < 10) { bars[0].classList.add('medium'); bars[1].classList.add('medium'); return; }
+  bars.forEach(b => b.classList.add('strong'));
+}
+
+function changePassword() {
+  const session = getSession(); if(!session) return;
+  const cur = document.getElementById('currentPw').value;
+  const nw = document.getElementById('newPw').value;
+  const cf = document.getElementById('confirmPw').value;
+  const users = getUsers();
+  const data = users[session.username.toLowerCase()];
+  if(data.password !== btoa(cur)) { showToast('❌','Mevcut şifre hatalı!'); return; }
+  if(nw.length < 6) { showToast('❌','Yeni şifre en az 6 karakter olmalı'); return; }
+  if(nw !== cf) { showToast('❌','Şifreler eşleşmiyor!'); return; }
+  data.password = btoa(nw);
+  saveUsers(users);
+  document.getElementById('currentPw').value='';
+  document.getElementById('newPw').value='';
+  document.getElementById('confirmPw').value='';
+  showToast('🔑','Şifre başarıyla güncellendi!');
+}
+
+// ── TOKEN ────────────────────────────────────────────────
+function copyToken() {
+  const session = getSession(); if(!session) return;
+  const users = getUsers();
+  const token = users[session.username.toLowerCase()].token;
+  navigator.clipboard.writeText(token).then(() => showToast('📋','Token kopyalandı!'));
+}
+
+function regenerateToken() {
+  const session = getSession(); if(!session) return;
+  const users = getUsers();
+  const data = users[session.username.toLowerCase()];
+  const newToken = generateToken(data.username);
+  data.token = newToken;
+  saveUsers(users);
+  document.getElementById('infoToken').textContent = newToken;
+  document.getElementById('apiTokenDisplay').textContent = newToken;
+  showToast('🔄','Token yenilendi!');
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────
+function handleDownload(platform) {
+  showToast('⬇️', platform === 'windows' ? 'KageLauncher.exe indiriliyor...' : platform === 'mac' ? 'KageLauncher.dmg indiriliyor...' : 'KageLauncher.jar indiriliyor...');
+  // Gerçek indirme linki buraya gelecek:
+  // window.location.href = 'YOUR_DOWNLOAD_URL';
+}
+
+// ── TOAST ────────────────────────────────────────────────
+let toastTimer;
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── PARTICLES ────────────────────────────────────────────
+function createParticles() {
+  const container = document.getElementById('particles');
+  for(let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 4 + 2;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*15+8}s;
+      animation-delay:${Math.random()*-20}s;
+      opacity:${Math.random()*0.5};
+    `;
+    container.appendChild(p);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────
+function init() {
+  createParticles();
+  const session = getSession();
+  if(session) {
+    const users = getUsers();
+    if(users[session.username.toLowerCase()]) {
+      updateNavState(session.username);
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
