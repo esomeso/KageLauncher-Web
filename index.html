@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KageLauncher — Minecraft Launcher</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -652,7 +653,6 @@
 
 <div id="particles"></div>
 
-<!-- NAV -->
 <nav>
   <a class="nav-logo" href="#" onclick="showPage('home')">
     <div class="logo-icon"><span class="logo-k">K</span></div>
@@ -673,9 +673,7 @@
   </div>
 </nav>
 
-<!-- HOME PAGE -->
 <div id="page-home" class="page active">
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-orb orb1"></div>
     <div class="hero-orb orb2"></div>
@@ -718,7 +716,6 @@
     </div>
   </section>
 
-  <!-- FEATURES -->
   <section class="section" id="features">
     <div class="section-label">Neden KageLauncher?</div>
     <h2 class="section-title">Her şey bir arada.</h2>
@@ -757,7 +754,6 @@
     </div>
   </section>
 
-  <!-- DOWNLOAD -->
   <div class="download-section" id="download">
     <div class="download-inner">
       <div class="download-card">
@@ -804,7 +800,6 @@
   </footer>
 </div>
 
-<!-- DASHBOARD PAGE -->
 <div id="page-dashboard" class="page">
   <div class="dashboard-wrap">
     <div class="dash-header">
@@ -819,7 +814,6 @@
     </div>
 
     <div class="dash-grid">
-      <!-- LEFT: Profile Card -->
       <div>
         <div class="profile-card">
           <div class="profile-banner"></div>
@@ -844,7 +838,6 @@
         </div>
       </div>
 
-      <!-- RIGHT: Tabs -->
       <div class="dash-main">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab('profil')">
@@ -861,7 +854,6 @@
           </button>
         </div>
 
-        <!-- PROFIL TAB -->
         <div class="tab-panel active" id="tab-profil">
           <div class="settings-card">
             <div class="settings-card-header">📋 Hesap Bilgileri</div>
@@ -892,7 +884,6 @@
           </div>
         </div>
 
-        <!-- SKIN TAB -->
         <div class="tab-panel" id="tab-skin">
           <div class="settings-card">
             <div class="settings-card-header">🎨 Skin Ayarları</div>
@@ -929,7 +920,6 @@
           </div>
         </div>
 
-        <!-- CAPE TAB -->
         <div class="tab-panel" id="tab-cape">
           <div class="settings-card">
             <div class="settings-card-header">🏳️ Cape Seçimi</div>
@@ -943,7 +933,6 @@
           </div>
         </div>
 
-        <!-- AYARLAR TAB -->
         <div class="tab-panel" id="tab-ayarlar">
           <div class="settings-card">
             <div class="settings-card-header">🔑 Şifre Değiştir</div>
@@ -987,7 +976,6 @@
   </div>
 </div>
 
-<!-- AUTH MODAL -->
 <div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
@@ -1000,7 +988,6 @@
         <button class="modal-tab" id="tabRegister" onclick="switchAuthTab('register')">Kayıt Ol</button>
       </div>
 
-      <!-- LOGIN FORM -->
       <div id="formLogin">
         <div class="form-group">
           <label class="form-label">Kullanıcı Adı</label>
@@ -1015,7 +1002,6 @@
         <p style="text-align:center;font-size:13px;color:var(--text3);margin-top:16px">Hesabın yok mu? <a href="#" style="color:var(--purple2);text-decoration:none" onclick="switchAuthTab('register')">Kayıt ol</a></p>
       </div>
 
-      <!-- REGISTER FORM -->
       <div id="formRegister" style="display:none">
         <div class="form-group">
           <label class="form-label">Kullanıcı Adı</label>
@@ -1044,22 +1030,20 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast">
   <span class="toast-icon" id="toastIcon">✅</span>
   <span id="toastMsg">İşlem başarılı</span>
 </div>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────
-const DB_KEY = 'kagelauncher_users';
+// ── SUPABASE AYARLARI ─────────────────────────────────────
+// Bölüm 3'teki Supabase bilgilerini buraya yapıştıracaksın!
+const SUPABASE_URL = "BURAYA_SUPABASE_URL_GELECEK"; 
+const SUPABASE_ANON_KEY = "BURAYA_SUPABASE_ANON_KEY_GELECEK";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const SESSION_KEY = 'kagelauncher_session';
 
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
-  catch { return {}; }
-}
-function saveUsers(u) { localStorage.setItem(DB_KEY, JSON.stringify(u)); }
 function getSession() {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
   catch { return null; }
@@ -1104,7 +1088,7 @@ function showError(id, msg) {
   el.textContent = msg; el.classList.add('show');
 }
 
-// ── REGISTER ─────────────────────────────────────────────
+// ── REGISTER (SUPABASE BULUT ENTEGRASYONU) ──────────────────
 function validateUsername(input) {
   const val = input.value;
   const ok = /^[a-zA-Z0-9_]{3,16}$/.test(val);
@@ -1112,7 +1096,7 @@ function validateUsername(input) {
   else { const e = document.getElementById('regUserError'); e.classList.remove('show'); }
 }
 
-function doRegister() {
+async function doRegister() {
   clearErrors();
   const user = document.getElementById('regUser').value.trim();
   const pass = document.getElementById('regPass').value;
@@ -1122,44 +1106,54 @@ function doRegister() {
   if(pass.length < 6) { showError('regPassError','Şifre en az 6 karakter olmalı'); return; }
   if(pass !== pass2) { showError('regPassError','Şifreler eşleşmiyor!'); return; }
 
-  const users = getUsers();
-  if(users[user.toLowerCase()]) { showError('regUserError','Bu kullanıcı adı zaten alınmış!'); return; }
+  // Supabase'de kullanıcı kontrolü
+  const { data: existingUser } = await supabase.from('users').select('username').eq('username_lowercase', user.toLowerCase()).maybeSingle();
+  if(existingUser) { showError('regUserError','Bu kullanıcı adı zaten alınmış!'); return; }
 
   const token = generateToken(user);
-  users[user.toLowerCase()] = {
+  const nowStr = new Date().toLocaleDateString('tr-TR');
+
+  const { error } = await supabase.from('users').insert([{
     username: user,
-    password: btoa(pass),
-    token,
-    createdAt: new Date().toLocaleDateString('tr-TR'),
+    username_lowercase: user.toLowerCase(),
+    password: btoa(pass), // Şifreyi basitçe base64 formatına çeviriyoruz
+    token: token,
+    created_at: nowStr,
     sessions: 1,
-    skin: { name: 'Varsayılan', model: 'steve' },
-    cape: 'none',
-    joinDays: 1
-  };
-  saveUsers(users);
+    skin_name: 'Varsayılan',
+    skin_model: 'steve',
+    skin_url: '',
+    cape: 'none'
+  }]);
+
+  if (error) { showToast('❌', 'Kayıt sırasında bir hata oluştu!'); console.error(error); return; }
+
   saveSession({ username: user });
   closeModal();
-  loadDashboard(user);
+  await loadDashboard(user);
   showToast('✅', 'Hoş geldin ' + user + '! Hesabın oluşturuldu.');
 }
 
-// ── LOGIN ────────────────────────────────────────────────
-function doLogin() {
+// ── LOGIN (SUPABASE BULUT ENTEGRASYONU) ─────────────────────
+async function doLogin() {
   clearErrors();
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
-  const users = getUsers();
-  const data = users[user.toLowerCase()];
-  if(!data || data.password !== btoa(pass)) {
+
+  const { data: player, error } = await supabase.from('users').select('*').eq('username_lowercase', user.toLowerCase()).maybeSingle();
+
+  if(error || !player || player.password !== btoa(pass)) {
     showError('loginError','Kullanıcı adı veya şifre hatalı!');
     return;
   }
-  data.sessions = (data.sessions || 0) + 1;
-  saveUsers(users);
-  saveSession({ username: data.username });
+
+  // Oturum sayısını artır
+  await supabase.from('users').update({ sessions: (player.sessions || 0) + 1 }).eq('id', player.id);
+
+  saveSession({ username: player.username });
   closeModal();
-  loadDashboard(data.username);
-  showToast('🎮', 'Tekrar hoş geldin, ' + data.username + '!');
+  await loadDashboard(player.username);
+  showToast('🎮', 'Tekrar hoş geldin, ' + player.username + '!');
 }
 
 // ── LOGOUT ───────────────────────────────────────────────
@@ -1170,33 +1164,29 @@ function logout() {
   showToast('👋', 'Güvenli çıkış yapıldı.');
 }
 
-// ── DASHBOARD ────────────────────────────────────────────
-function loadDashboard(username) {
-  const users = getUsers();
-  const data = users[username.toLowerCase()];
-  if(!data) return;
+// ── DASHBOARD LOADING ────────────────────────────────────
+async function loadDashboard(username) {
+  const { data: data, error } = await supabase.from('users').select('*').eq('username_lowercase', username.toLowerCase()).maybeSingle();
+  if(!data || error) return;
 
   document.getElementById('dashName').textContent = data.username;
   document.getElementById('profileName').textContent = data.username;
   document.getElementById('infoUsername').textContent = data.username;
-  document.getElementById('infoDate').textContent = data.createdAt;
+  document.getElementById('infoDate').textContent = data.created_at;
   document.getElementById('infoToken').textContent = data.token;
   document.getElementById('apiTokenDisplay').textContent = data.token;
   document.getElementById('statSessions').textContent = data.sessions || 1;
-  document.getElementById('statDays').textContent = data.joinDays || 1;
-  document.getElementById('currentSkinName').textContent = (data.skin && data.skin.name !== 'Varsayılan') ? data.skin.name : 'Varsayılan skin aktif';
-  document.getElementById('skinPreviewLabel').textContent = data.skin ? data.skin.name : 'Varsayılan';
-  if(data.skin) document.getElementById('skinModel').value = data.skin.model || 'steve';
+  document.getElementById('statDays').textContent = 1;
+  document.getElementById('currentSkinName').textContent = data.skin_name !== 'Varsayılan' ? data.skin_name : 'Varsayılan skin aktif';
+  document.getElementById('skinPreviewLabel').textContent = data.skin_name || 'Varsayılan';
+  document.getElementById('skinModel').value = data.skin_model || 'steve';
 
-  // Avatar initials
   const initials = data.username.slice(0,2).toUpperCase();
   document.getElementById('profileAvatar').textContent = initials;
   updateNavState(data.username);
 
-  // Cape
   renderCapeOptions(data.cape);
 
-  // MC Versions
   const versions = ['1.21.4','1.21','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1','1.16.5','1.12.2','1.8.9','1.7.10'];
   const vGrid = document.getElementById('mcVersions');
   vGrid.innerHTML = versions.map(v => `<div class="mc-ver">${v}</div>`).join('');
@@ -1233,42 +1223,44 @@ function switchTab(name) {
   btns[names.indexOf(name)].classList.add('active');
 }
 
-// ── SKIN ────────────────────────────────────────────────
-function uploadSkin(input) {
+// ── SKIN UPLOAD (SUPABASE BULUT STORAGE ENTEGRASYONU) ────────
+async function uploadSkin(input) {
   const file = input.files[0]; if(!file) return;
   const session = getSession(); if(!session) return;
-  const users = getUsers();
-  const data = users[session.username.toLowerCase()];
-  data.skin = data.skin || {};
-  data.skin.name = file.name.replace('.png','');
-  const reader = new FileReader();
-  reader.onload = e => {
-    data.skin.dataUrl = e.target.result;
-    saveUsers(users);
-    document.getElementById('currentSkinName').textContent = data.skin.name;
-    document.getElementById('skinPreviewLabel').textContent = data.skin.name;
-    document.getElementById('skinPreviewEmoji').textContent = '🧑';
-    showToast('🎨','Skin yüklendi: '+data.skin.name);
-  };
-  reader.readAsDataURL(file);
+  
+  showToast('🔄', 'Skin yükleniyor...');
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${session.username.toLowerCase()}_skin_${Date.now()}.${fileExt}`;
+  
+  // Supabase Storage'a yükle (skins bucket'ı gerekir)
+  const { data: uploadData, error: uploadError } = await supabase.storage.from('skins').upload(fileName, file, { cacheControl: '3600', upsert: true });
+  
+  if (uploadError) { showToast('❌', 'Dosya yükleme hatası!'); console.error(uploadError); return; }
+  
+  // Public URL Al
+  const { data: urlData } = supabase.storage.from('skins').getPublicUrl(fileName);
+  const publicUrl = urlData.publicUrl;
+
+  // Kullanıcı tablosunu güncelle
+  await supabase.from('users').update({ skin_name: file.name.replace('.png',''), skin_url: publicUrl }).eq('username_lowercase', session.username.toLowerCase());
+
+  document.getElementById('currentSkinName').textContent = file.name.replace('.png','');
+  document.getElementById('skinPreviewLabel').textContent = file.name.replace('.png','');
+  showToast('🎨','Skin buluta yüklendi ve kaydedildi!');
 }
 
-function saveSkinModel() {
+async function saveSkinModel() {
   const session = getSession(); if(!session) return;
-  const users = getUsers();
-  const data = users[session.username.toLowerCase()];
-  data.skin = data.skin || {};
-  data.skin.model = document.getElementById('skinModel').value;
-  saveUsers(users);
+  const model = document.getElementById('skinModel').value;
+  await supabase.from('users').update({ skin_model: model }).eq('username_lowercase', session.username.toLowerCase());
 }
 
-function saveSkinSettings() {
-  const session = getSession(); if(!session) return;
-  saveSkinModel();
-  showToast('💾','Skin ayarları kaydedildi!');
+async function saveSkinSettings() {
+  await saveSkinModel();
+  showToast('💾','Skin modeli güncellendi!');
 }
 
-// ── CAPE ────────────────────────────────────────────────
+// ── CAPE (SUPABASE BULUT ENTEGRASYONU) ──────────────────────
 const CAPES = [
   {id:'none', emoji:'❌', label:'Yok'},
   {id:'red', emoji:'🟥', label:'Kırmızı'},
@@ -1300,12 +1292,10 @@ function selectCape(id) {
   });
 }
 
-function saveCape() {
+async function saveCape() {
   const session = getSession(); if(!session) return;
-  const users = getUsers();
-  users[session.username.toLowerCase()].cape = selectedCape;
-  saveUsers(users);
-  showToast('🏳️','Cape kaydedildi: '+CAPES.find(c=>c.id===selectedCape).label);
+  await supabase.from('users').update({ cape: selectedCape }).eq('username_lowercase', session.username.toLowerCase());
+  showToast('🏳️','Cape veri tabanına kaydedildi: '+CAPES.find(c=>c.id===selectedCape).label);
 }
 
 // ── PASSWORD ─────────────────────────────────────────────
@@ -1319,18 +1309,20 @@ function checkPwStrength(val, prefix='') {
   bars.forEach(b => b.classList.add('strong'));
 }
 
-function changePassword() {
+async function changePassword() {
   const session = getSession(); if(!session) return;
   const cur = document.getElementById('currentPw').value;
   const nw = document.getElementById('newPw').value;
   const cf = document.getElementById('confirmPw').value;
-  const users = getUsers();
-  const data = users[session.username.toLowerCase()];
-  if(data.password !== btoa(cur)) { showToast('❌','Mevcut şifre hatalı!'); return; }
+  
+  const { data: player } = await supabase.from('users').select('password').eq('username_lowercase', session.username.toLowerCase()).maybeSingle();
+  
+  if(player.password !== btoa(cur)) { showToast('❌','Mevcut şifre hatalı!'); return; }
   if(nw.length < 6) { showToast('❌','Yeni şifre en az 6 karakter olmalı'); return; }
   if(nw !== cf) { showToast('❌','Şifreler eşleşmiyor!'); return; }
-  data.password = btoa(nw);
-  saveUsers(users);
+  
+  await supabase.from('users').update({ password: btoa(nw) }).eq('username_lowercase', session.username.toLowerCase());
+  
   document.getElementById('currentPw').value='';
   document.getElementById('newPw').value='';
   document.getElementById('confirmPw').value='';
@@ -1338,20 +1330,16 @@ function changePassword() {
 }
 
 // ── TOKEN ────────────────────────────────────────────────
-function copyToken() {
+async function copyToken() {
   const session = getSession(); if(!session) return;
-  const users = getUsers();
-  const token = users[session.username.toLowerCase()].token;
-  navigator.clipboard.writeText(token).then(() => showToast('📋','Token kopyalandı!'));
+  const { data: player } = await supabase.from('users').select('token').eq('username_lowercase', session.username.toLowerCase()).maybeSingle();
+  navigator.clipboard.writeText(player.token).then(() => showToast('📋','Token kopyalandı!'));
 }
 
-function regenerateToken() {
+async function regenerateToken() {
   const session = getSession(); if(!session) return;
-  const users = getUsers();
-  const data = users[session.username.toLowerCase()];
-  const newToken = generateToken(data.username);
-  data.token = newToken;
-  saveUsers(users);
+  const newToken = generateToken(session.username);
+  await supabase.from('users').update({ token: newToken }).eq('username_lowercase', session.username.toLowerCase());
   document.getElementById('infoToken').textContent = newToken;
   document.getElementById('apiTokenDisplay').textContent = newToken;
   showToast('🔄','Token yenilendi!');
@@ -1360,8 +1348,6 @@ function regenerateToken() {
 // ── DOWNLOAD ─────────────────────────────────────────────
 function handleDownload(platform) {
   showToast('⬇️', platform === 'windows' ? 'KageLauncher.exe indiriliyor...' : platform === 'mac' ? 'KageLauncher.dmg indiriliyor...' : 'KageLauncher.jar indiriliyor...');
-  // Gerçek indirme linki buraya gelecek:
-  // window.location.href = 'YOUR_DOWNLOAD_URL';
 }
 
 // ── TOAST ────────────────────────────────────────────────
@@ -1394,14 +1380,11 @@ function createParticles() {
 }
 
 // ── INIT ──────────────────────────────────────────────────
-function init() {
+async function init() {
   createParticles();
   const session = getSession();
   if(session) {
-    const users = getUsers();
-    if(users[session.username.toLowerCase()]) {
-      updateNavState(session.username);
-    }
+    await loadDashboard(session.username);
   }
 }
 
