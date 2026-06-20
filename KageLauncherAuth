@@ -1,0 +1,81 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+public class KageLauncherAuth {
+
+    // Bölüm 3'teki Supabase URL bilgisini buraya da eklemelisin
+    private static final String SUPABASE_URL = "https://BURAYA_SUPABASE_PROJE_ID.supabase.co";
+    // Bölüm 3'teki Anon API anahtarını buraya eklemelisin
+    private static final String SUPABASE_ANON_KEY = "BURAYA_SUPABASE_ANON_KEY_GELECEK";
+
+    /**
+     * Oyuncunun kullanıcı adı ve şifresiyle Supabase veri tabanından doğrulanmasını sağlar.
+     * Web sitesi şifreyi Base64 ile şifrelediği için Java tarafında da Base64 kontrolü yapılır.
+     * * @param username Giriş yapılmak istenen kullanıcı adı
+     * @param password Giriş yapılmak istenen düz şifre
+     * @return Başarılıysa skin_url döner, başarısızsa null döner.
+     */
+    public static String authenticatePlayer(String username, String password) {
+        try {
+            // Şifreyi web sitesi formatına (Base64) çeviriyoruz
+            String base64Password = java.util.Base64.getEncoder().encodeToString(password.getBytes("UTF-8"));
+            
+            // Supabase REST API sorgusu (Kullanıcı adı ve şifre filtresi)
+            String targetUrl = SUPABASE_URL + "/rest/v1/users?username_lowercase=eq." + username.toLowerCase() + "&password=eq." + base64Password + "&select=skin_url";
+            
+            URL url = new URL(targetUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("apikey", SUPABASE_ANON_KEY);
+            conn.setRequestProperty("Authorization", "Bearer " + SUPABASE_ANON_KEY);
+            
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String inputLine;
+                StringBuilder response = new StringBuilder();
+                
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                
+                String jsonResult = response.toString();
+                
+                // Eğer dönen dizi boşsa kullanıcı adı veya şifre yanlıştır
+                if (jsonResult.equals("[]")) {
+                    System.out.println("Giriş Başarısız: Hatalı kullanıcı adı veya şifre.");
+                    return null;
+                }
+                
+                // Basitçe JSON içinden skin_url değerini çekiyoruz
+                // Profesyonel projelerde org.json veya Gson kütüphanesi kullanabilirsin
+                String skinUrl = "";
+                if (jsonResult.contains("\"skin_url\":\"")) {
+                    skinUrl = jsonResult.split("\"skin_url\":\"")[1].split("\"")[0];
+                }
+                
+                System.out.println("Giriş Başarılı! Oyuncu Skini: " + (skinUrl.isEmpty() ? "Varsayılan" : skinUrl));
+                return skinUrl; // Minecraft'ı bu skin linki ile besleyebilirsin.
+            } else {
+                System.out.println("Supabase Bağlantı Hatası! Kod: " + responseCode);
+            }
+        } catch (Exception e) {
+            System.out.println("Kimlik doğrulama sırasında bir hata meydana geldi: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public static void main(String[] args) {
+        // Launcher'ındaki Giriş Yap butonu tetiklendiğinde çalışacak örnek test:
+        String testUser = "OyuncuAdı";
+        String testPass = "OyuncuSifresi";
+        
+        String loginResult = authenticatePlayer(testUser, testPass);
+        if (loginResult != null) {
+            // Giriş başarılı, oyunu başlatma kodlarını tetikle!
+        }
+    }
+}
